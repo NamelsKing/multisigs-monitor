@@ -1,0 +1,28 @@
+[tool.pytest.ini_options]
+addopts = "-v -s -p no:cacheprovider"
+asyncio_mode = "auto"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+ignore_errors = true
+skip_covered = true
+skip_empty = true
+exclude_lines = [
+    'pragma: no cover',
+    'def __repr__',
+    'raise AssertionError',
+    'raise NotImplementedError',
+    'if __name__ == .__main__.:',
+    'if t.TYPE_CHECKING:',
+    'RuntimeError'
+]
+omit =[
+    'tests/conftest.py',
+    'monitor/__init__.py',
+    'monitor/__main__.py',
+]

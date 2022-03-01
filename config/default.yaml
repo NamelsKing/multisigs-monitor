@@ -1,0 +1,16 @@
+services:
+  discord:
+    token: {{DISCORD_BOT_TOKEN}}
+    # List of channel ids, that will receive notifications
+    subscribers:
+      # test channel
+      - 943420446773248010
+  gnosis:
+    url: https://safe-transaction.gnosis.io/api/v1
+
+multisig:
+  networks:
+    mainnet:
+      - label: dev
+        addr: '0xB65cef03b9B89f99517643226d76e286ee999e77'
+

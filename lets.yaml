@@ -1,0 +1,137 @@
+shell: bash
+
+env:
+  DOCKER_BUILDKIT: "1"
+  COMPOSE_DOCKER_CLI_BUILD: "1"
+  # debug
+  CONFIG_PATH: "config/badger.yaml"
+
+eval_env:
+  CURRENT_UID: echo "`id -u`:`id -g`"
+  CURRENT_USER_NAME: echo "`id -un`"
+  DISCORD_BOT_TOKEN: echo $(head -n 1 scripts/discord-bot-token)
+
+commands:
+  build-bot:
+    description: __build for inner purpose
+    cmd: docker build -t bot_monitor . -f docker/backend.dockerfile --target dev
+
+  build-checks:
+    description: __build for inner purpose
+    cmd: docker build -t bot_monitor_checks . -f docker/backend.dockerfile --target checks
+
+  init:
+    description: Install all project deps for indexing
+    cmd: |
+      lets init-venv
+      lets install-py-deps
+
+  add-bot-token:
+    description: Adds bot token to ignored file
+    options: |
+      Usage: lets add-bot-token <token>
+    cmd: |
+      TOKEN_PATH="scripts/discord-bot-token"
+
+      echo "Secret created at $TOKEN_PATH"
+      echo $LETSOPT_TOKEN > $TOKEN_PATH
+
+  # Main spinup command
+  run:
+    description: Run discord bot monitor
+    depends:
+      - build-bot
+    cmd: |
+      docker-compose up bot-monitor
+
+  test:
+    description: Run unit tests
+    depends:
+      - build-checks
+    options: |
+      Usage: lets test [<tests>]
+    cmd: |
+      ARGS=""
+      if [[ -n ${LETSOPT_TESTS} ]]; then
+        ARGS="-k ${LETSOPT_TESTS}"
+      fi
+      docker-compose run --rm pytest ${ARGS}
+
+  flake:
+    description: Run flake8
+    options: |
+      Usage: lets flake [--diff] [<args>...]
+
+      Options:
+       <args>...         Trailing positional args
+        -d, --diff        Run only on diff
+    depends:
+      - build-checks
+    cmd: |
+      FLAKE_ARGS='.'
+
+      DIFF=$( [[ -n "$LETSOPT_DIFF" ]] && echo "--diff" )
+
+      if [[ -n "$LETSOPT_DIFF" ]] && [[ -n "$LETSOPT_ARGS" ]]; then
+        FLAKE_ARGS="$DIFF $LETSOPT_ARGS"
+      fi
+
+      docker-compose run -e ARGS=FLAKE_ARGS --rm flake8
+
+  ishell:
+    description: Run ipython shell
+    depends:
+      - build-bot
+    cmd: docker-compose run --rm -T ishell
+
+  init-venv:
+    description: |
+      Init virtual env in project.
+    cmd: |
+      if [[ ! -d .venv ]]; then
+        echo Creating .venv
+        python3.9 -m venv .venv
+      fi
+      lets activate-pyenv
+      if [ ! -f .venv/bin/pip-compile ]; then
+        echo Installing pip-tools
+        pip3 install pip-tools
+      fi
+      if [ ! -f requirements/backend.txt ]; then
+        echo Compiling requirements/backend.in
+        pip-compile --output-file=requirements/backend.txt requirements/backend.in
+      fi
+      if [ ! -f requirements/checks.txt ]; then
+        echo Compiling requirements/checks.in
+        pip-compile --output-file=requirements/checks.txt requirements/checks.in
+      fi
+
+  activate-pyenv:
+    description: activate python venv
+    cmd: |
+      source .venv/bin/activate
+      echo activated $(which python3)
+
+  install-py-deps:
+    description: install python dependencies from requiremtns
+    cmd: |
+      python3.9 -m pip install -r requirements/backend.txt
+      python3.9 -m pip install -r requirements/checks.txt
+
+  update-py-deps:
+    description: generate new dependencies for backend
+    cmd: |
+      docker-compose run --rm bot-monitor-base pip-compile \
+        --output-file=requirements/backend.txt requirements/backend.in
+
+  update-checks-deps:
+    description: generate new dependencies for checks
+    cmd: |
+      docker-compose run --rm bot-monitor-base pip-compile \
+        --output-file=requirements/checks.txt requirements/checks.in
+
+  enable-hooks:
+    description: enable git hooks for project
+    cmd: |
+      ./scripts/enable-hooks.sh
+      echo Git hooks enabled!

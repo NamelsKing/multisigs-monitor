@@ -1,0 +1,4 @@
+- add more info logs
+- use Queue for events
+- let ppl stop recieving stats
+- add app debug mode

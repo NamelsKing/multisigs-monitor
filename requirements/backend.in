@@ -1,0 +1,13 @@
+aiohttp==3.7.2
+aiodns
+
+async_timeout
+
+trafaret
+trafaret-config
+
+discord
+
+pytz
+
+ipython

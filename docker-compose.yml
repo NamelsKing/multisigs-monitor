@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  bot-monitor-base: &bot-monitor-base
+    image: bot_monitor
+    working_dir: /app
+    user: ${CURRENT_UID}
+    tty: true
+    init: true
+    environment:
+      PYTHONUNBUFFERED: 1
+      PYTHONPATH: .
+      CONFIG_PATH: ${CONFIG_PATH}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+    build:
+      context: .
+      dockerfile: docker/backend.dockerfile
+      target: dev
+    volumes:
+      - ./monitor:/app/monitor
+      - ./config:/app/config
+      - ./requirements:/app/requirements
+
+  bot-monitor:
+    <<: *bot-monitor-base
+    command: |
+      watchexec --restart \
+        -w config \
+        -w monitor \
+        --exts py,yaml \
+        -- python3 -m monitor
+
+  ishell:
+    <<: *bot-monitor-base
+    command: ipython
+
+  flake8:
+    image: 'bot_monitor_checks'
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+        read_only: True
+    command: flake8 $ARGS
+
+  pytest:
+    image: 'bot_monitor_checks'
+    entrypoint: pytest
+    user: ${CURRENT_UID}
+    volumes:
+      - type: bind
+        source: .
+        target: /app

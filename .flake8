@@ -1,0 +1,25 @@
+[flake8]
+max-complexity = 8
+max-line-length = 80
+ignore =
+    EXE002,
+    PIE786:,
+    B902,
+    E711,
+    S101,
+    W503,
+    T101,
+    A003,
+    C408,
+    N815,
+    E800
+exclude =
+    .git,
+    __pycache__,
+    alembic,
+    tests,
+    .venv
+
+[pytest]
+filterwarnings =
+    ignore::DeprecationWarning

@@ -1,0 +1,16 @@
+#!/bin/bash
+CURRENT_BRANCH=$(git branch --show-current)
+FORK_POINT=$(git merge-base origin/main $CURRENT_BRANCH)
+
+HAS_STAGED_PY=$(git diff --staged --diff-filter=d --name-only '*.py')
+DIFF_PY=$(git diff $FORK_POINT --name-only --diff-filter=d -- '*.py')
+
+if [ ! -z "$HAS_STAGED_PY" ]; then
+    echo "Running flake8 ..."
+    lets flake --diff $DIFF_PY
+    if [[ $? -ne 0 ]]; then
+      exit 1
+    fi
+fi
+
+exit 0
