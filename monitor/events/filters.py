@@ -23,6 +23,16 @@ def gnosis_tx_list_data_filter(
     past_time = datetime.now() - timedelta(days=300)
 
     for tx in data:
+        have_nonce = None
+
+        try:
+            have_nonce = tx['nonce']
+        except KeyError:
+            continue
+
+        if not bool(have_nonce):
+            continue
+
         if tx['txType'] == GnosisAllTxsType.MULTISIG_TRANSACTION.value:
             submission_date = datetime.fromisoformat(
                 gnosis_date_to_iso(tx['submissionDate'])
